@@ -1,0 +1,9 @@
+employee_name,email,country,currency,amount,department,role,payment_note
+Ada Okafor,ada@acme.com,Nigeria,NGN,250000,Engineering,Frontend Engineer,September salary
+Daniel Mensah,daniel@acme.com,Ghana,USD,800,Design,Product Designer,September salary
+Sofia Ruiz,sofia@acme.com,Mexico,MXN,12000,Support,Support Lead,September salary
+Marie Keller,marie@acme.com,Germany,EUR,1500,Sales,Account Executive,September salary
+Chiamaka Nwosu,chiamaka@acme.com,Nigeria,NGN,300000,Engineering,Backend Engineer,September salary
+John Bello,john@acme.com,Nigeria,USD,4200,Engineering,Backend Engineer,September salary + bonus
+Victor James,victor@acme.com,Nigeria,NGN,280000,Operations,Operations Manager,September salary
+Lina Chen,lina@acme.com,Canada,CAD,2000,Marketing,Marketing Manager,September salary

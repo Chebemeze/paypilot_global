@@ -1,0 +1,10 @@
+{
+  "id": "evt_kyc_action_001",
+  "eventType": "kyc.action_required",
+  "payload": {
+    "userId": "bmoni_user_123",
+    "email": "chiamaka@acme.com",
+    "reason": "selfie_liveness_required"
+  },
+  "timestamp": "2026-09-02T12:00:00Z"
+}
