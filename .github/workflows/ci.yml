@@ -1,0 +1,167 @@
+## PayPilot Global — Continuous Integration
+##
+## Runs on every push and every pull request targeting develop or main.
+##
+## Two jobs, deliberately separate:
+##
+##   secrets  — refuses to let a .env file or a live API key into the repo.
+##              Runs FIRST and independently, because a leaked credential is the
+##              one mistake you cannot undo with a follow-up commit.
+##   backend  — runs the 194-test pytest suite.
+##
+## Why this exists: four people are editing shared files (schemas.py, main.py,
+## models.py). Without CI, "did I break someone else's code?" is answered days
+## later by whoever happens to run the tests. With it, GitHub answers in 90
+## seconds, on the PR, before review.
+
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+# Cancel an in-progress run when the same branch is pushed again. Saves CI
+# minutes and stops a stale run reporting after a newer commit has landed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Block committed .env files
+        run: |
+          # git ls-files lists what is TRACKED. A .env on a developer's disk is
+          # fine and expected; a .env in the repo is a leak.
+          #
+          # .env.example is explicitly allowed — it is the template that stops
+          # people inventing their own variable names.
+          found=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' || true)
+          if [ -n "$found" ]; then
+            echo "::error::A .env file is tracked by git. This leaks credentials."
+            echo "$found"
+            echo ""
+            echo "Fix:"
+            echo "  git rm --cached <file>     # removes from git, keeps it on your disk"
+            echo "  # confirm .gitignore contains '.env' with NO trailing slash"
+            echo ""
+            echo "If it was already pushed, the secret is public permanently —"
+            echo "rewriting history is not enough. Rotate every key in it."
+            exit 1
+          fi
+          echo "No tracked .env files."
+
+      - name: Verify .gitignore actually protects .env
+        run: |
+          # The bug this catches, from real experience on this repo: the rule
+          # was written as '.env/' with a trailing slash, which ignores a
+          # DIRECTORY named .env and not the .env FILE. git status looked clean,
+          # so nobody noticed until someone asked git directly.
+          #
+          # check-ignore works on pathnames whether or not the file exists, so
+          # this asserts the GUARANTEE rather than today's symptom.
+          if git check-ignore -q backend/.env; then
+            echo "backend/.env is correctly ignored."
+          else
+            echo "::error::.gitignore does not ignore backend/.env"
+            echo "Current rules matching 'env':"
+            grep -n "env" .gitignore || echo "  (none)"
+            echo ""
+            echo "Add a line containing exactly:  .env   (no trailing slash)"
+            exit 1
+          fi
+
+      - name: Scan for hard-coded credentials
+        run: |
+          # Deliberately narrow: real key prefixes and obvious assignments.
+          # A noisy scanner that cries wolf gets ignored, and an ignored check
+          # is worse than no check.
+          hits=$(grep -rInE \
+            "(FLWSECK-[A-Za-z0-9]|FLWSECK_TEST-[A-Za-z0-9]{8}|sk_live_[A-Za-z0-9]|JWT_SECRET\s*=\s*['\"][^'\"]{16,})" \
+            --include='*.py' --include='*.ts' --include='*.tsx' \
+            --include='*.js' --include='*.json' --include='*.yml' \
+            . 2>/dev/null \
+            | grep -v '\.env\.example' \
+            | grep -v 'your_test_secret_key_here' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Possible hard-coded credential:"
+            echo "$hits"
+            echo ""
+            echo "Move it to .env and read it via app/config.py settings."
+            exit 1
+          fi
+          echo "No hard-coded credentials found."
+
+  # ───────────────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: secrets          # never run tests on a branch that leaks a secret
+
+    strategy:
+      fail-fast: false      # report BOTH versions; don't hide 3.12 behind 3.11
+      matrix:
+        # 3.12 is what the team runs locally. 3.11 catches accidental use of
+        # syntax that only exists in newer Pythons, which would break a
+        # teammate on an older distro.
+        python-version: ['3.11', '3.12']
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check the app imports
+        # A syntax error or bad import should fail with a clear message here,
+        # rather than as 194 confusing collection errors in the next step.
+        env:
+          DATABASE_URL: "sqlite://"
+          JWT_SECRET: "ci-test-secret-not-a-real-key"
+        run: python -c "import app.main; print('app.main imports cleanly')"
+
+      - name: Run tests
+        # conftest.py sets DATABASE_URL to in-memory SQLite before importing
+        # anything from app, so CI needs no MySQL service and no secrets.
+        # Tests that need an employer, a user or a token build their own.
+        run: python -m pytest -v --tb=short
+
+      - name: Confirm the suite is not silently empty
+        # Guards a real failure mode: if pytest.ini goes missing or testpaths
+        # breaks, pytest can exit 0 having collected NOTHING, and a green tick
+        # would mean "no tests ran" rather than "tests passed".
+        #
+        # Note there is no 2>/dev/null here, on purpose. Suppressing stderr
+        # hides the very error you are trying to diagnose — an ImportError in
+        # conftest.py looks identical to an empty suite once stderr is gone.
+        run: |
+          output=$(python -m pytest --collect-only 2>&1)
+          count=$(echo "$output" | grep -oE '[0-9]+ tests? collected' | grep -oE '^[0-9]+' | head -1)
+          echo "Collected ${count:-0} tests."
+          if [ -z "$count" ] || [ "$count" -lt 150 ]; then
+            echo "::error::Expected at least 150 tests, collected ${count:-0}."
+            echo "Tests were deleted, or pytest.ini / testpaths is broken,"
+            echo "or conftest.py failed to import. Full output:"
+            echo "$output" | tail -30
+            exit 1
+          fi
