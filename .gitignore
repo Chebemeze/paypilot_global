@@ -1,1 +1,62 @@
-.env/
+# ─── Secrets ──────────────────────────────────────────────────────────────────
+# NEVER commit .env. It holds JWT_SECRET, the Flutterwave secret key and the
+# webhook signing secrets. Anything pushed to GitHub is public forever, even if
+# you delete it in a later commit — the old commit keeps the value. If a secret
+# does get pushed, rotating it is the only real fix.
+#
+# Commit .env.example instead: same keys, placeholder values.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+venv/
+.venv/
+env/
+ENV/
+.Python
+*.egg-info/
+dist/
+build/
+
+# ─── Tests / tooling ──────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# ─── Databases ────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+*.sql.bak
+
+# ─── Node / frontend ──────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.nuxt/
+.svelte-kit/
+.vite/
+coverage/
+npm-debug.log*
+yarn-error.log*
+
+# ─── Editors / OS ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ─── Local scratch ────────────────────────────────────────────────────────────
+*.log
+tmp/
+uploads/

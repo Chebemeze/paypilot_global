@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Canvas */
+    --canvas: #FFFFFF;
+    --canvas-subtle: #F4F7FB;
+    
+    /* Text */
+    --ink: #081C34;
+    --text-body: #30435C;
+    --text-muted: #54627B;
+    
+    /* Brand */
+    --brand: #1D4ED8;
+    --brand-hover: #1A3FBF;
+    --brand-active: #173CB5;
+    --brand-soft: #E9EFFE;
+    --link: #1E40AF;
+    
+    /* Borders */
+    --border: #DDE4F0;
+    --border-subtle: #E7ECF6;
+    --input-border: #7C8698;
+    
+    /* Gold (Enterprise/Premium) */
+    --gold: #E0BE62;
+    --gold-text: #9A6A00;
+    --gold-decor: #C7A84B;
+    
+    /* Semantic */
+    --success: #047857;
+    --success-bg: #E6F6EE;
+    --success-text: #065F46;
+    
+    --danger: #C13515;
+    --danger-bg: #FCEBEC;
+    --danger-text: #9B1C1C;
+    
+    --warning: #B45309;
+    --warning-bg: #FFF7E0;
+    --warning-text: #92400E;
+    
+    --info: #1E40AF;
+    --info-bg: #E9EFFE;
+    --info-text: #1E40AF;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-canvas-subtle text-ink antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Focus ring */
+*:focus-visible {
+  @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-white;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Gradient backgrounds */
+.gradient-navy {
+  background: linear-gradient(135deg, #081C34 0%, #0E2B55 50%, #1D4ED8 100%);
+}
+
+.gradient-navy-subtle {
+  background: linear-gradient(135deg, #081C34 0%, #0E2B55 100%);
+}
+
+/* Gold line */
+.gold-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply shadow-lg -translate-y-0.5;
+}

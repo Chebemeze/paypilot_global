@@ -1,0 +1,10 @@
+{
+  "id": "evt_onboarding_001",
+  "eventType": "onboarding.completed",
+  "payload": {
+    "userId": "bmoni_user_456",
+    "status": "completed",
+    "currencies": ["USDB", "CNGN"]
+  },
+  "timestamp": "2026-09-02T14:30:00Z"
+}
